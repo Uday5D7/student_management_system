@@ -19,7 +19,14 @@ CREATE TABLE users (
     role VARCHAR(20) DEFAULT 'student',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
-
+CREATE TABLE faculty (
+    id INT PRIMARY KEY,
+    faculty_id VARCHAR(20) UNIQUE,
+    name VARCHAR(100),
+    email VARCHAR(100) UNIQUE,
+    department VARCHAR(50),
+    password VARCHAR(255)
+);
 CREATE TABLE students (
     id INT  PRIMARY KEY,
     student_id VARCHAR(50),
@@ -31,6 +38,3 @@ CREATE TABLE students (
     department VARCHAR(100),
     address TEXT
 );
-
-INSERT INTO admins(username,password)
-VALUES('admin','admin123');
