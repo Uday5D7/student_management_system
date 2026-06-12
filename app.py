@@ -1,0 +1,165 @@
+from flask import Flask,render_template,request,redirect,url_for,session
+from flask_mysqldb import MySQL
+
+app = Flask(__name__)
+
+app.secret_key = "student_secret"
+
+app.config['MYSQL_HOST'] = 'localhost'
+app.config['MYSQL_USER'] = 'root'
+app.config['MYSQL_PASSWORD'] = 'UDAY@2004'
+app.config['MYSQL_DB'] = 'student_management'
+
+mysql = MySQL(app)
+
+# Login Page
+@app.route('/', methods=['GET','POST'])
+def login():
+
+    if request.method == 'POST':
+
+        username = request.form['username']
+        password = request.form['password']
+
+        cur = mysql.connection.cursor()
+
+        cur.execute(
+            "SELECT * FROM admins WHERE username=%s AND password=%s",
+            (username,password)
+        )
+
+        admin = cur.fetchone()
+
+        if admin:
+            session['admin'] = username
+            return redirect('/dashboard')
+
+    return render_template('login.html')
+
+@app.route('/register', methods=['GET', 'POST'])
+def register():
+
+    message = ""
+
+    if request.method == 'POST':
+
+        username = request.form['username']
+        email = request.form['email']
+        password = request.form['password']
+        role = request.form['role']
+
+        cur = mysql.connection.cursor()
+
+        cur.execute(
+            """
+            INSERT INTO users
+            (username,email,password,role)
+            VALUES (%s,%s,%s,%s)
+            """,
+            (username,email,password,role)
+        )
+
+        mysql.connection.commit()
+
+        message = "Account Created Successfully"
+
+    return render_template(
+        'register.html',
+        message=message
+    )
+
+# Dashboard
+@app.route('/dashboard')
+def dashboard():
+
+    if 'admin' not in session:
+        return redirect('/')
+
+    cur = mysql.connection.cursor()
+
+    cur.execute("SELECT COUNT(*) FROM students")
+    total_students = cur.fetchone()[0]
+
+    return render_template(
+        'dashboard.html',
+        total_students=total_students
+    )
+
+
+# Student List
+@app.route('/students')
+def students():
+
+    cur = mysql.connection.cursor()
+
+    cur.execute("SELECT * FROM students")
+
+    data = cur.fetchall()
+
+    return render_template(
+        'students.html',
+        students=data
+    )
+
+
+# Add Student
+@app.route('/add_student', methods=['GET','POST'])
+def add_student():
+    print(request.form)
+
+    if request.method == 'POST':
+
+        student_id = request.form['student_id']
+        name = request.form['name']
+        gender = request.form['gender']
+        dob = request.form.get('dob')
+        email = request.form['email']
+        phone = request.form['phone']
+        department = request.form.get('department','')
+        address = request.form.get('address')
+
+        cur = mysql.connection.cursor()
+
+        cur.execute("""
+        INSERT INTO students
+        (
+            student_id,
+            name,
+            gender,
+            dob,
+            email,
+            phone,
+            department,
+            address
+        )
+        VALUES (%s,%s,%s,%s,%s,%s,%s,%s)
+        """,
+        (
+            student_id,
+            name,
+            gender,
+            dob,
+            email,
+            phone,
+            department,
+            address
+        ))
+
+        mysql.connection.commit()
+
+        return redirect('/students')
+
+    return render_template('add_student.html')
+
+
+# Logout
+@app.route('/logout')
+def logout():
+
+    session.clear()
+
+    return redirect('/')
+
+
+if __name__ == "__main__":
+    app.run(debug=True)
